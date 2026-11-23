@@ -41,7 +41,7 @@ SEED_SECRET = _env("SEED_SECRET")
 
 # How many listings the seeder generates (synthetic sample dataset).
 SEED_TOTAL = int(_env("SEED_TOTAL", default="3000"))
-SEED_BATCH = int(_env("SEED_BATCH", default="400"))
+SEED_BATCH = int(_env("SEED_BATCH", default="100"))
 
 # Chat history window sent to the model per turn.
 HISTORY_LIMIT = 10

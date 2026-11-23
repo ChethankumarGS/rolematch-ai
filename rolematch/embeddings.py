@@ -58,15 +58,15 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
     out: list[list[float]] = []
     for i in range(0, len(texts), BATCH_SIZE):
         chunk = texts[i : i + BATCH_SIZE]
-        # one retry with backoff handles transient free-tier rate limits
-        for attempt in (0, 1):
+        # free-tier embedding quota is per-minute; back off on 429
+        for attempt, wait in enumerate((0, 15, 30)):
             try:
                 out.extend(await embed(chunk))
                 break
-            except httpx.HTTPStatusError:
-                if attempt == 1:
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code != 429 or attempt == 2:
                     raise
-                await asyncio.sleep(3)
+                await asyncio.sleep(wait)
     return out
 
 
