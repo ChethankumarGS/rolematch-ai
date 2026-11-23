@@ -223,6 +223,23 @@ async def admin_diag(x_seed_secret: str | None = Header(default=None)):
             out["batch_embed_test"] = entry
         except Exception as exc:  # noqa: BLE001
             out["batch_embed_test"] = {"error": type(exc).__name__}
+        # minimal generateContent probe per candidate chat model
+        for model in ("gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"):
+            try:
+                r = await client.post(
+                    f"{base}/models/{model}:generateContent",
+                    headers=headers,
+                    json={"contents": [{"role": "user", "parts": [{"text": "Say OK"}]}]},
+                )
+                entry2: dict = {"status": r.status_code}
+                if r.status_code != 200:
+                    import re
+
+                    msg = r.json().get("error", {}).get("message", "")
+                    entry2["error"] = re.sub(r"key=[^&\s]+", "key=REDACTED", msg)[:200]
+                out.setdefault("generate_probe", {})[model] = entry2
+            except Exception as exc:  # noqa: BLE001
+                out.setdefault("generate_probe", {})[model] = {"error": type(exc).__name__}
     return out
 
 
