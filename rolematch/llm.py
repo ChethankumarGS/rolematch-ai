@@ -36,8 +36,9 @@ How you work:
   tools returned.
 - If nothing matches, say so and suggest relaxing a filter instead of
   pretending.
-- The dataset is a sample catalog for demonstration; if asked, be upfront
-  that listings are synthetic demo data.
+- The dataset is a sample catalog for demonstration. Always frame results as
+  sample or demo listings, never as current or live openings; if asked, be
+  upfront that listings are synthetic demo data.
 """
 
 

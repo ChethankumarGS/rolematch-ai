@@ -270,3 +270,13 @@ h1 {
   .bubble, .cards { max-width: 100%; }
   h1 { font-size: 1.35rem; }
 }
+
+.demo-label {
+  font-size: 11px;
+  color: #e8a33d;
+  border: 1px solid #5a4426;
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-bottom: 8px;
+  display: inline-block;
+}

@@ -106,11 +106,24 @@ function jobCard(job) {
 function addJobCards(jobs) {
   const wrap = el("div", "msg assistant");
   const cards = el("div", "cards");
+  const label = el("div", "demo-label", "Sample listings - demo data, not live openings");
+  cards.appendChild(label);
   for (const job of jobs) cards.appendChild(jobCard(job));
   wrap.appendChild(cards);
   chat.appendChild(wrap);
   scrollDown();
 }
+
+async function refreshJobCount() {
+  try {
+    const r = await fetch("/api/health");
+    const d = await r.json();
+    if (d && typeof d.jobs === "number") {
+      document.getElementById("jobCount").textContent = d.jobs.toLocaleString();
+    }
+  } catch (e) { /* leave placeholder */ }
+}
+refreshJobCount();
 
 function addTyping() {
   const msg = el("div", "msg assistant");
