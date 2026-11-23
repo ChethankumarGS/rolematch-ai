@@ -135,3 +135,7 @@ async def admin_seed(x_seed_secret: str | None = Header(default=None)):
     pool = await db.get_pool()
     async with pool.acquire() as conn:
         return await seeder.seed_batch(conn)
+
+import logging as _logging
+_logging.getLogger("httpx").setLevel(_logging.WARNING)
+_logging.getLogger("google_genai").setLevel(_logging.WARNING)
