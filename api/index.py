@@ -170,12 +170,17 @@ async def admin_diag(x_seed_secret: str | None = Header(default=None)):
             r = await client.get(f"{base}/models", params={"pageSize": 100}, headers=headers)
             out["list_models_status"] = r.status_code
             if r.status_code == 200:
-                names = [
+                models = r.json().get("models", [])
+                out["embed_capable_models"] = [
                     m["name"].split("/")[-1]
-                    for m in r.json().get("models", [])
+                    for m in models
                     if "embedContent" in m.get("supportedGenerationMethods", [])
                 ]
-                out["embed_capable_models"] = names
+                out["generate_capable_models"] = [
+                    m["name"].split("/")[-1]
+                    for m in models
+                    if "generateContent" in m.get("supportedGenerationMethods", [])
+                ]
         except Exception as exc:  # noqa: BLE001 - report type only, never message (may echo URL)
             out["list_models_error"] = type(exc).__name__
         for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):
