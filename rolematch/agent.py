@@ -59,7 +59,9 @@ def _trim_jobs_for_context(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
 async def handle_message(conn, session_id: UUID, text: str) -> dict[str, Any]:
     """Run one chat turn. Returns reply text plus any jobs to render as cards."""
     prefs_row = await conn.fetchrow("SELECT prefs FROM sessions WHERE id = $1", session_id)
-    prefs = dict(prefs_row["prefs"]) if prefs_row else {}
+    # asyncpg returns jsonb as str unless a codec is registered
+    raw = prefs_row["prefs"] if prefs_row else None
+    prefs = json.loads(raw) if isinstance(raw, str) else (dict(raw) if raw else {})
 
     history = await load_history(conn, session_id)
 
