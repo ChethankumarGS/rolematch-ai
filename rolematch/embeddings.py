@@ -33,7 +33,13 @@ async def _gemini_batch(texts: list[str]) -> list[list[float]]:
             headers={"x-goog-api-key": config.GEMINI_API_KEY},
             json={"requests": requests},
         )
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            # include Google's error body (quota detail); URL carries no secret
+            raise httpx.HTTPStatusError(
+                f"{resp.status_code}: {resp.text[:400]}",
+                request=resp.request,
+                response=resp,
+            )
         data = resp.json()
     return [item["values"] for item in data["embeddings"]]
 
