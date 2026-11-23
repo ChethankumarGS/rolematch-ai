@@ -85,16 +85,8 @@ async def chat(payload: ChatIn, request: Request, response: Response):
     session_id = await _get_or_create_session(request, response)
     pool = await db.get_pool()
     async with pool.acquire() as conn:
-        try:
-            return await agent.handle_message(conn, session_id, payload.message.strip())
-        except Exception as exc:  # noqa: BLE001 - temporary sanitized debug surface
-            import re
-
-            detail = re.sub(r"key=[^&\s]+", "key=REDACTED", str(exc))[:300]
-            return JSONResponse(
-                status_code=500,
-                content={"error": type(exc).__name__, "detail": detail},
-            )
+        result = await agent.handle_message(conn, session_id, payload.message.strip())
+    return result
 
 
 @app.get("/api/saved")
@@ -153,95 +145,6 @@ async def admin_seed(x_seed_secret: str | None = Header(default=None)):
                 status_code=500,
                 content={"error": type(exc).__name__, "detail": detail},
             )
-
-@app.get("/api/admin/diag")
-async def admin_diag(x_seed_secret: str | None = Header(default=None)):
-    """Secret-protected diagnostics: which Gemini models this key can use.
-    Returns only status codes and model names, never the key or full URLs."""
-    if not config.SEED_SECRET or x_seed_secret != config.SEED_SECRET:
-        raise HTTPException(status_code=401, detail="bad seed secret")
-    import httpx
-
-    base = "https://generativelanguage.googleapis.com/v1beta"
-    headers = {"x-goog-api-key": config.GEMINI_API_KEY}
-    out: dict = {"embedding_model_configured": config.EMBEDDING_MODEL}
-    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as client:
-        try:
-            r = await client.get(f"{base}/models", params={"pageSize": 100}, headers=headers)
-            out["list_models_status"] = r.status_code
-            if r.status_code == 200:
-                models = r.json().get("models", [])
-                out["embed_capable_models"] = [
-                    m["name"].split("/")[-1]
-                    for m in models
-                    if "embedContent" in m.get("supportedGenerationMethods", [])
-                ]
-                out["generate_capable_models"] = [
-                    m["name"].split("/")[-1]
-                    for m in models
-                    if "generateContent" in m.get("supportedGenerationMethods", [])
-                ]
-        except Exception as exc:  # noqa: BLE001 - report type only, never message (may echo URL)
-            out["list_models_error"] = type(exc).__name__
-        for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):
-            try:
-                r = await client.post(
-                    f"{base}/models/{model}:embedContent",
-                    headers=headers,
-                    json={"model": f"models/{model}", "content": {"parts": [{"text": "ping"}]}},
-                )
-                dim = None
-                if r.status_code == 200:
-                    dim = len(r.json().get("embedding", {}).get("values", []))
-                out.setdefault("embed_content", {})[model] = {"status": r.status_code, "dim": dim}
-            except Exception as exc:  # noqa: BLE001
-                out.setdefault("embed_content", {})[model] = {"error": type(exc).__name__}
-        # exact call the seeder makes: batchEmbedContents with outputDimensionality
-        try:
-            r = await client.post(
-                f"{base}/models/{config.EMBEDDING_MODEL}:batchEmbedContents",
-                headers=headers,
-                json={
-                    "requests": [
-                        {
-                            "model": f"models/{config.EMBEDDING_MODEL}",
-                            "content": {"parts": [{"text": t}]},
-                            "outputDimensionality": config.EMBEDDING_DIM,
-                        }
-                        for t in ("ping one", "ping two")
-                    ]
-                },
-            )
-            entry: dict = {"status": r.status_code}
-            if r.status_code == 200:
-                entry["dims"] = [len(e.get("values", [])) for e in r.json().get("embeddings", [])]
-            else:
-                import re
-
-                msg = r.json().get("error", {}).get("message", "")
-                entry["error"] = re.sub(r"key=[^&\s]+", "key=REDACTED", msg)[:300]
-            out["batch_embed_test"] = entry
-        except Exception as exc:  # noqa: BLE001
-            out["batch_embed_test"] = {"error": type(exc).__name__}
-        # minimal generateContent probe per candidate chat model
-        for model in ("gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"):
-            try:
-                r = await client.post(
-                    f"{base}/models/{model}:generateContent",
-                    headers=headers,
-                    json={"contents": [{"role": "user", "parts": [{"text": "Say OK"}]}]},
-                )
-                entry2: dict = {"status": r.status_code}
-                if r.status_code != 200:
-                    import re
-
-                    msg = r.json().get("error", {}).get("message", "")
-                    entry2["error"] = re.sub(r"key=[^&\s]+", "key=REDACTED", msg)[:200]
-                out.setdefault("generate_probe", {})[model] = entry2
-            except Exception as exc:  # noqa: BLE001
-                out.setdefault("generate_probe", {})[model] = {"error": type(exc).__name__}
-    return out
-
 
 import logging as _logging
 _logging.getLogger("httpx").setLevel(_logging.WARNING)

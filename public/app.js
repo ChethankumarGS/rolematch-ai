@@ -28,7 +28,8 @@ function addMessage(role, text) {
 
 function fmtSalary(job) {
   if (job.salary_min_lpa == null && job.salary_max_lpa == null) return null;
-  return `₹${job.salary_min_lpa}–${job.salary_max_lpa} LPA`;
+  const fmt = (n) => (n == null ? "?" : Number(n.toFixed(1)));
+  return `₹${fmt(job.salary_min_lpa)}–${fmt(job.salary_max_lpa)} LPA`;
 }
 
 function jobCard(job) {
