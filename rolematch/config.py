@@ -28,7 +28,7 @@ OPENAI_CHAT_MODEL = _env("OPENAI_CHAT_MODEL", default="gpt-4o-mini")
 # Fallbacks keep the agent responsive when a model is rate-limited.
 GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
 
-EMBEDDING_MODEL = _env("EMBEDDING_MODEL", default="text-embedding-004")
+EMBEDDING_MODEL = _env("EMBEDDING_MODEL", default="gemini-embedding-001")
 OPENAI_EMBEDDING_MODEL = _env("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small")
 
 # Vector dimensions must match the embedding model. text-embedding-004 -> 768,

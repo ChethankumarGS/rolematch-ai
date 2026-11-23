@@ -21,6 +21,9 @@ async def _gemini_batch(texts: list[str]) -> list[list[float]]:
         {
             "model": f"models/{config.EMBEDDING_MODEL}",
             "content": {"parts": [{"text": t}]},
+            # gemini-embedding-001 natively returns 3072 dims; pin to the
+            # schema dimension so it stays compatible with the vector column.
+            "outputDimensionality": config.EMBEDDING_DIM,
         }
         for t in texts
     ]
