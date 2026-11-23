@@ -85,8 +85,16 @@ async def chat(payload: ChatIn, request: Request, response: Response):
     session_id = await _get_or_create_session(request, response)
     pool = await db.get_pool()
     async with pool.acquire() as conn:
-        result = await agent.handle_message(conn, session_id, payload.message.strip())
-    return result
+        try:
+            return await agent.handle_message(conn, session_id, payload.message.strip())
+        except Exception as exc:  # noqa: BLE001 - temporary sanitized debug surface
+            import re
+
+            detail = re.sub(r"key=[^&\s]+", "key=REDACTED", str(exc))[:300]
+            return JSONResponse(
+                status_code=500,
+                content={"error": type(exc).__name__, "detail": detail},
+            )
 
 
 @app.get("/api/saved")
