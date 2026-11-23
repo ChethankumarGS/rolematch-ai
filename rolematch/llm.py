@@ -68,6 +68,7 @@ async def gemini_step(contents: list[dict[str, Any]]) -> dict[str, Any]:
         m for m in config.GEMINI_FALLBACK_MODELS if m != config.CHAT_MODEL
     ]
     last_error: Exception | None = None
+    failures: list[str] = []
     for model in models:
         try:
             data = await _gemini_generate(model, contents)
@@ -77,7 +78,9 @@ async def gemini_step(contents: list[dict[str, Any]]) -> dict[str, Any]:
             return candidates[0].get("content") or {"role": "model", "parts": []}
         except (httpx.HTTPError, LLMError) as exc:  # try the next model
             last_error = exc
-    raise LLMError(f"all gemini models failed: {last_error}")
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            failures.append(f"{model}={status or type(exc).__name__}")
+    raise LLMError(f"all gemini models failed: {'; '.join(failures)} ({last_error})")
 
 
 def gemini_function_response_parts(results: list[dict[str, Any]]) -> dict[str, Any]:
