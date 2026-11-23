@@ -160,7 +160,8 @@ async def admin_diag(x_seed_secret: str | None = Header(default=None)):
                 out["embed_capable_models"] = names
         except Exception as exc:  # noqa: BLE001 - report type only, never message (may echo URL)
             out["list_models_error"] = type(exc).__name__
-        for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):            try:
+        for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):
+            try:
                 r = await client.post(
                     f"{base}/models/{model}:embedContent",
                     headers=headers,
