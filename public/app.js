@@ -19,7 +19,17 @@ function scrollDown() {
 
 function addMessage(role, text) {
   const msg = el("div", `msg ${role}`);
-  const bubble = el("div", "bubble", text);
+  const bubble = el("div", "bubble");
+  if (role === "assistant") {
+    // minimal safe markdown: escape everything, then restore **bold** markers
+    const esc = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    bubble.innerHTML = esc.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  } else {
+    bubble.textContent = text;
+  }
   msg.appendChild(bubble);
   chat.appendChild(msg);
   scrollDown();
