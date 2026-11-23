@@ -134,7 +134,16 @@ async def admin_seed(x_seed_secret: str | None = Header(default=None)):
         raise HTTPException(status_code=401, detail="bad seed secret")
     pool = await db.get_pool()
     async with pool.acquire() as conn:
-        return await seeder.seed_batch(conn)
+        try:
+            return await seeder.seed_batch(conn)
+        except Exception as exc:  # noqa: BLE001 - surface sanitized cause for debugging
+            import re
+
+            detail = re.sub(r"key=[^&\s]+", "key=REDACTED", str(exc))[:300]
+            return JSONResponse(
+                status_code=500,
+                content={"error": type(exc).__name__, "detail": detail},
+            )
 
 @app.get("/api/admin/diag")
 async def admin_diag(x_seed_secret: str | None = Header(default=None)):
