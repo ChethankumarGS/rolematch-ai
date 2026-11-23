@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     experience_max  REAL NOT NULL DEFAULT 2,
     salary_min_lpa  REAL,
     salary_max_lpa  REAL,
-    skills          TEXT[] NOT NULL DEFAULT '{}',
+    skills          TEXT[] NOT NULL DEFAULT '{{}}',
     description     TEXT NOT NULL,
     posted_days_ago INTEGER NOT NULL DEFAULT 7,
     embedding       vector({dim})
