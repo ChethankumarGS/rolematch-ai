@@ -23,10 +23,10 @@ LLM_PROVIDER = _env("LLM_PROVIDER", default="gemini").lower()
 GEMINI_API_KEY = _env("GEMINI_API_KEY")
 OPENAI_API_KEY = _env("OPENAI_API_KEY")
 
-CHAT_MODEL = _env("CHAT_MODEL", default="gemini-2.5-flash")
+CHAT_MODEL = _env("CHAT_MODEL", default="gemini-3.1-flash-lite")
 OPENAI_CHAT_MODEL = _env("OPENAI_CHAT_MODEL", default="gpt-4o-mini")
 # Fallbacks keep the agent responsive when a model is rate-limited.
-GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
+GEMINI_FALLBACK_MODELS = ["gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-3.8-flash"]
 
 EMBEDDING_MODEL = _env("EMBEDDING_MODEL", default="gemini-embedding-001")
 OPENAI_EMBEDDING_MODEL = _env("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small")
