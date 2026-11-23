@@ -17,6 +17,14 @@ from . import config
 
 _pool: asyncpg.Pool | None = None
 
+
+async def _init_connection(conn: asyncpg.Connection) -> None:
+    # The vector extension must exist before the codec can be registered.
+    # IF NOT EXISTS makes this a cheap no-op after the first connection.
+    await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    await register_vector(conn)
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
     id              SERIAL PRIMARY KEY,
@@ -82,7 +90,7 @@ async def get_pool() -> asyncpg.Pool:
             _normalize_dsn(config.DATABASE_URL),
             min_size=1,
             max_size=4,
-            init=register_vector,
+            init=_init_connection,
         )
     return _pool
 
@@ -90,7 +98,6 @@ async def get_pool() -> asyncpg.Pool:
 async def init_schema() -> None:
     pool = await get_pool()
     async with pool.acquire() as conn:
-        await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
         await conn.execute(SCHEMA.format(dim=config.EMBEDDING_DIM))
 
 
