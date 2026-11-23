@@ -140,7 +140,7 @@ async def admin_seed(x_seed_secret: str | None = Header(default=None)):
         except Exception as exc:  # noqa: BLE001 - surface sanitized cause for debugging
             import re
 
-            detail = re.sub(r"key=[^&\s]+", "key=REDACTED", str(exc))[:300]
+            detail = re.sub(r"key=[^&\s]+", "key=REDACTED", str(exc))[:1200]
             return JSONResponse(
                 status_code=500,
                 content={"error": type(exc).__name__, "detail": detail},
