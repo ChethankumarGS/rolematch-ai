@@ -36,7 +36,7 @@ async def _gemini_batch(texts: list[str]) -> list[list[float]]:
         if resp.status_code != 200:
             # include Google's error body (quota detail); URL carries no secret
             raise httpx.HTTPStatusError(
-                f"{resp.status_code}: {resp.text[:400]}",
+                f"{resp.status_code}: {resp.text[:1500]}",
                 request=resp.request,
                 response=resp,
             )
