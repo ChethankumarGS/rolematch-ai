@@ -160,8 +160,7 @@ async def admin_diag(x_seed_secret: str | None = Header(default=None)):
                 out["embed_capable_models"] = names
         except Exception as exc:  # noqa: BLE001 - report type only, never message (may echo URL)
             out["list_models_error"] = type(exc).__name__
-        for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):
-            try:
+        for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):            try:
                 r = await client.post(
                     f"{base}/models/{model}:embedContent",
                     headers=headers,
@@ -173,6 +172,33 @@ async def admin_diag(x_seed_secret: str | None = Header(default=None)):
                 out.setdefault("embed_content", {})[model] = {"status": r.status_code, "dim": dim}
             except Exception as exc:  # noqa: BLE001
                 out.setdefault("embed_content", {})[model] = {"error": type(exc).__name__}
+        # exact call the seeder makes: batchEmbedContents with outputDimensionality
+        try:
+            r = await client.post(
+                f"{base}/models/{config.EMBEDDING_MODEL}:batchEmbedContents",
+                headers=headers,
+                json={
+                    "requests": [
+                        {
+                            "model": f"models/{config.EMBEDDING_MODEL}",
+                            "content": {"parts": [{"text": t}]},
+                            "outputDimensionality": config.EMBEDDING_DIM,
+                        }
+                        for t in ("ping one", "ping two")
+                    ]
+                },
+            )
+            entry: dict = {"status": r.status_code}
+            if r.status_code == 200:
+                entry["dims"] = [len(e.get("values", [])) for e in r.json().get("embeddings", [])]
+            else:
+                import re
+
+                msg = r.json().get("error", {}).get("message", "")
+                entry["error"] = re.sub(r"key=[^&\s]+", "key=REDACTED", msg)[:300]
+            out["batch_embed_test"] = entry
+        except Exception as exc:  # noqa: BLE001
+            out["batch_embed_test"] = {"error": type(exc).__name__}
     return out
 
 
