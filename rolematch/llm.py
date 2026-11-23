@@ -55,7 +55,7 @@ async def _gemini_generate(model: str, contents: list[dict[str, Any]]) -> dict[s
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.post(
             f"{GEMINI_BASE}/models/{model}:generateContent",
-            params={"key": config.GEMINI_API_KEY},
+            headers={"x-goog-api-key": config.GEMINI_API_KEY},
             json=payload,
         )
         resp.raise_for_status()

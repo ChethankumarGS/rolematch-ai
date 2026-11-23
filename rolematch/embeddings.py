@@ -27,7 +27,7 @@ async def _gemini_batch(texts: list[str]) -> list[list[float]]:
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.post(
             f"{GEMINI_BASE}/models/{config.EMBEDDING_MODEL}:batchEmbedContents",
-            params={"key": config.GEMINI_API_KEY},
+            headers={"x-goog-api-key": config.GEMINI_API_KEY},
             json={"requests": requests},
         )
         resp.raise_for_status()

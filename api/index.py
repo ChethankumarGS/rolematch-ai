@@ -136,6 +136,46 @@ async def admin_seed(x_seed_secret: str | None = Header(default=None)):
     async with pool.acquire() as conn:
         return await seeder.seed_batch(conn)
 
+@app.get("/api/admin/diag")
+async def admin_diag(x_seed_secret: str | None = Header(default=None)):
+    """Secret-protected diagnostics: which Gemini models this key can use.
+    Returns only status codes and model names, never the key or full URLs."""
+    if not config.SEED_SECRET or x_seed_secret != config.SEED_SECRET:
+        raise HTTPException(status_code=401, detail="bad seed secret")
+    import httpx
+
+    base = "https://generativelanguage.googleapis.com/v1beta"
+    headers = {"x-goog-api-key": config.GEMINI_API_KEY}
+    out: dict = {"embedding_model_configured": config.EMBEDDING_MODEL}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as client:
+        try:
+            r = await client.get(f"{base}/models", params={"pageSize": 100}, headers=headers)
+            out["list_models_status"] = r.status_code
+            if r.status_code == 200:
+                names = [
+                    m["name"].split("/")[-1]
+                    for m in r.json().get("models", [])
+                    if "embedContent" in m.get("supportedGenerationMethods", [])
+                ]
+                out["embed_capable_models"] = names
+        except Exception as exc:  # noqa: BLE001 - report type only, never message (may echo URL)
+            out["list_models_error"] = type(exc).__name__
+        for model in (config.EMBEDDING_MODEL, "gemini-embedding-001", "text-embedding-004"):
+            try:
+                r = await client.post(
+                    f"{base}/models/{model}:embedContent",
+                    headers=headers,
+                    json={"model": f"models/{model}", "content": {"parts": [{"text": "ping"}]}},
+                )
+                dim = None
+                if r.status_code == 200:
+                    dim = len(r.json().get("embedding", {}).get("values", []))
+                out.setdefault("embed_content", {})[model] = {"status": r.status_code, "dim": dim}
+            except Exception as exc:  # noqa: BLE001
+                out.setdefault("embed_content", {})[model] = {"error": type(exc).__name__}
+    return out
+
+
 import logging as _logging
 _logging.getLogger("httpx").setLevel(_logging.WARNING)
 _logging.getLogger("google_genai").setLevel(_logging.WARNING)
